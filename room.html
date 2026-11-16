@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Геймерская бункер-студия · Three.js</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#05060a;
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; color:#e8edf5; }
+  canvas { display:block; }
+  #ui {
+    position:fixed; top:14px; left:14px; z-index:10; padding:14px 14px 12px;
+    background:rgba(10,12,18,.85); backdrop-filter:blur(12px);
+    border:1px solid rgba(0,255,136,.15); border-radius:14px; width:236px;
+    box-shadow:0 12px 34px rgba(0,0,0,.6);
+  }
+  #ui h1 { margin:0 0 10px; font-size:14px; letter-spacing:.4px; font-weight:700; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,.4); }
+  .label { font-size:10px; text-transform:uppercase; letter-spacing:1.2px; opacity:.55; margin:8px 0 6px; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; }
+  button {
+    flex:1 1 auto; cursor:pointer; font:inherit; font-size:11.5px; padding:7px 9px;
+    color:#dbe4f0; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12); border-radius:9px; transition:.15s;
+    white-space:nowrap;
+  }
+  button:hover { background:rgba(0,255,136,.15); border-color:rgba(0,255,136,.4); }
+  button.active { background:#00ff88; border-color:#00ff88; color:#000; font-weight:700; box-shadow:0 0 14px rgba(0,255,136,.45); }
+  #hint {
+    position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:10;
+    font-size:11px; opacity:.62; text-align:center; padding:6px 12px;
+    background:rgba(10,12,18,.7); border-radius:20px; border:1px solid rgba(0,255,136,.15);
+  }
+  @media (max-width:520px){ #ui{width:calc(100% - 28px)} #hint{font-size:10px} }
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <h1>🎮 GAMER BUNKER</h1>
+  <div class="label">Стены</div>
+  <div class="row" id="modes">
+    <button data-mode="all" class="active">Все 4 стены</button>
+    <button data-mode="back">Только задник</button>
+    <button data-mode="floor">Только пол</button>
+  </div>
+  <div class="label">Прочее</div>
+  <div class="row">
+    <button id="btnNight">🌙 Ночь</button>
+    <button id="btnSpin">🔄 Поворот</button>
+    <button id="btnReset">🎯 Сброс</button>
+  </div>
+</div>
+
+<div id="hint">ЛКМ — вращать · Shift+ЛКМ или ПКМ — тащить · колесо — зум · <b>Кликни на ПК</b> для старта · клавиши 1 2 3</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ═══════════════ 1. БАЗА: рендерер, сцена, изометрическая камера ═══════════════ */
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#05060a');
+
+const VIEW = 3.5;
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+const HOME = new THREE.Vector3(8, 7, 8);
+camera.position.copy(HOME);
+function resize(){
+  const a = innerWidth / innerHeight;
+  camera.left = -VIEW*a; camera.right = VIEW*a; camera.top = VIEW; camera.bottom = -VIEW;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+addEventListener('resize', resize);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.0, 0);
+controls.enableDamping = true;  controls.dampingFactor = .08;
+controls.screenSpacePanning = true;
+controls.rotateSpeed = .65; controls.panSpeed = .9; controls.zoomSpeed = .9;
+controls.minZoom = .45; controls.maxZoom = 6;
+controls.minPolarAngle = .12; controls.maxPolarAngle = Math.PI/2 - .03;
+controls.autoRotateSpeed = .8;
+controls.mouseButtons = { LEFT:THREE.MOUSE.ROTATE, MIDDLE:THREE.MOUSE.DOLLY, RIGHT:THREE.MOUSE.PAN };
+controls.touches = { ONE:THREE.TOUCH.ROTATE, TWO:THREE.TOUCH.DOLLY_PAN };
+resize();
+
+/* ═══════════════ 2. ХЕЛПЕРЫ ═══════════════ */
+const M = (color, o={}) => new THREE.MeshStandardMaterial({ color:new THREE.Color(color), roughness:.85, metalness:0, ...o });
+function put(geo, mat, x=0, y=0, z=0, parent=scene){
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x,y,z); m.castShadow = true; m.receiveShadow = true;
+  parent.add(m); return m;
+}
+const B = (w,h,d,mat,x,y,z,p) => put(new THREE.BoxGeometry(w,h,d), mat, x,y,z,p);
+const C = (rt,rb,h,mat,x,y,z,p,s=18) => put(new THREE.CylinderGeometry(rt,rb,h,s), mat, x,y,z,p);
+const S = (r,mat,x,y,z,p,s=18) => put(new THREE.SphereGeometry(r,s,s), mat, x,y,z,p);
+const P = (w,h,mat,x,y,z,p) => put(new THREE.PlaneGeometry(w,h), mat, x,y,z,p);
+const G = (parent=scene,x=0,y=0,z=0) => { const g=new THREE.Group(); g.position.set(x,y,z); parent.add(g); return g; };
+const rnd = (a,b) => a + Math.random()*(b-a);
+function tex(canvas, rx=1, ry=1){
+  const t = new THREE.CanvasTexture(canvas);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx,ry);
+  t.anisotropy = 4; return t;
+}
+function cv(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; return [c, c.getContext('2d')]; }
+
+/* ═══════════════ 3. ПРОЦЕДУРНЫЕ ТЕКСТУРЫ ═══════════════ */
+function woodTex(){
+  const [c,g] = cv(512,512);
+  g.fillStyle = '#2a1f14'; g.fillRect(0,0,512,512); // Темнее для бункера
+  for(let i=0;i<8;i++){
+    const y = i*64;
+    g.fillStyle = `hsl(${28+Math.random()*8},${30+Math.random()*12}%,${25+Math.random()*10}%)`;
+    g.fillRect(0,y,512,62);
+    g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(0,y+62); g.lineTo(512,y+62); g.stroke();
+    for(let k=0;k<26;k++){
+      g.strokeStyle = `rgba(0,0,0,${.1+Math.random()*.2})`; g.lineWidth = 1;
+      const yy = y + Math.random()*60;
+      g.beginPath(); g.moveTo(Math.random()*512, yy); g.lineTo(Math.random()*512, yy+Math.random()*3-1.5); g.stroke();
+    }
+  }
+  return tex(c, 2, 2);
+}
+function wallTex(hex){
+  const [c,g] = cv(128,128);
+  g.fillStyle = hex; g.fillRect(0,0,128,128);
+  for(let i=0;i<2600;i++){
+    g.fillStyle = `rgba(255,255,255,${Math.random()*.03})`;
+    g.fillRect(Math.random()*128, Math.random()*128, 1, 1);
+  }
+  return tex(c, 4, 2);
+}
+function posterGG(){
+  const [c,g] = cv(300,300);
+  g.fillStyle='#0f0f1a'; g.fillRect(0,0,300,300);
+  g.strokeStyle='#00ff88'; g.lineWidth=6; g.strokeRect(20,20,260,260);
+  g.fillStyle='#00ff88'; g.font='bold 90px monospace'; g.textAlign='center'; g.textBaseline='middle';
+  g.shadowColor='#00ff88'; g.shadowBlur=15;
+  g.fillText('GG', 150, 130);
+  g.shadowBlur=0; g.font='bold 28px monospace'; g.fillText('WELL PLAYED', 150, 220);
+  return tex(c);
+}
+function posterRetro(){
+  const [c,g] = cv(300,420);
+  g.fillStyle='#1a0b2e'; g.fillRect(0,0,300,420);
+  g.strokeStyle='#ff00ff'; g.lineWidth=2;
+  for(let i=0;i<300;i+=30){ g.beginPath(); g.moveTo(i,200); g.lineTo(i,420); g.stroke(); }
+  for(let i=200;i<420;i+=30){ g.beginPath(); g.moveTo(0,i); g.lineTo(300,i); g.stroke(); }
+  g.fillStyle='#00ffff'; g.shadowColor='#00ffff'; g.shadowBlur=10;
+  g.font='bold 36px monospace'; g.textAlign='center';
+  g.fillText('RETRO', 150, 100);
+  g.fillText('WAVE', 150, 150);
+  return tex(c);
+}
+function neonSignTex(){
+  const [c,g] = cv(256, 128);
+  g.clearRect(0,0,256,128);
+  g.font = 'bold 38px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#ff0055'; g.shadowColor = '#ff0055'; g.shadowBlur = 20;
+  g.fillText('ON AIR', 128, 64);
+  return tex(c);
+}
+function posterFootball(){
+  const [c,g] = cv(300,420);
+  g.fillStyle='#051a0e'; g.fillRect(0,0,300,420);
+  for(let i=0;i<7;i++){ g.fillStyle = i%2?'#082515':'#051a0e'; g.fillRect(i*43,0,43,420); }
+  g.strokeStyle='rgba(0,255,136,.6)'; g.lineWidth=4;
+  g.strokeRect(18,18,264,384); g.beginPath(); g.arc(150,210,62,0,7); g.stroke();
+  g.fillStyle='#fff'; g.beginPath(); g.arc(150,210,34,0,7); g.fill();
+  g.fillStyle='#111'; for(let i=0;i<5;i++){ const a=i/5*Math.PI*2-1.57; g.beginPath(); g.arc(150+Math.cos(a)*20,210+Math.sin(a)*20,7,0,7); g.fill(); }
+  g.fillStyle='#00ff88'; g.shadowColor='#00ff88'; g.shadowBlur=10; g.font='bold 44px sans-serif'; g.textAlign='center';
+  g.fillText('FOOTBALL', 150, 90);
+  g.fillText('№ 10', 150, 350);
+  return tex(c);
+}
+function pitchRug(){
+  const [c,g] = cv(512,352);
+  g.fillStyle='#0f3d1f'; g.fillRect(0,0,512,352);
+  for(let i=0;i<8;i++){ g.fillStyle=i%2?'#134d28':'#0f3d1f'; g.fillRect(i*64,0,64,352); }
+  g.strokeStyle='rgba(0,255,136,.7)'; g.lineWidth=4;
+  g.strokeRect(20,20,472,312); g.beginPath(); g.moveTo(256,20); g.lineTo(256,332); g.stroke();
+  g.beginPath(); g.arc(256,176,54,0,7); g.stroke();
+  return tex(c);
+}
+function skyTex(night){
+  const [c,g] = cv(512,512);
+  const grd = g.createLinearGradient(0,0,0,512);
+  if(night){ grd.addColorStop(0,'#02040a'); grd.addColorStop(.65,'#0a1030'); grd.addColorStop(1,'#15152a'); }
+  else { grd.addColorStop(0,'#1a2540'); grd.addColorStop(.6,'#2a3a5c'); grd.addColorStop(1,'#3b4a63'); }
+  g.fillStyle=grd; g.fillRect(0,0,512,512);
+  if(night){
+    for(let i=0;i<180;i++){ g.fillStyle=`rgba(0,255,136,${Math.random()*.7})`; g.fillRect(Math.random()*512,Math.random()*330,2,2); }
+    g.fillStyle='#f4f1d0'; g.beginPath(); g.arc(390,90,34,0,7); g.fill();
+  }
+  for(let x=0;x<512;x+=rnd(26,52)){
+    const w = rnd(26,50), h = rnd(60,190);
+    g.fillStyle = night?'#080a14':'#1a2030'; g.fillRect(x,512-h,w,h);
+    for(let wy=512-h+10; wy<500; wy+=16) for(let wx=x+6; wx<x+w-8; wx+=14){
+      const lit = night ? Math.random()<.5 : Math.random()<.3;
+      g.fillStyle = lit ? (night?'#00ff88':'#88ccff') : (night?'#0d1226':'#1a2535');
+      g.fillRect(wx,wy,7,9);
+    }
+  }
+  return tex(c);
+}
+
+function makeScreen(){
+  const [c,g] = cv(192,112);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.magFilter = t.minFilter = THREE.NearestFilter;
+  const ball = {x:96,y:56,vx:1.5,vy:1.0};
+  const p1 = {x:44,y:56}, p2 = {x:148,y:56};
+  let sc = [0,0], last = -1;
+  function update(time){
+    if(time - last < .075) return; last = time;
+    ball.x += ball.vx; ball.y += ball.vy;
+    if(ball.y<16 || ball.y>100) ball.vy *= -1;
+    if(ball.x<8){ sc[1]++; ball.x=96; ball.y=56; ball.vx=1.5; }
+    if(ball.x>184){ sc[0]++; ball.x=96; ball.y=56; ball.vx=-1.5; }
+    const chase=(p,tx,ty,s)=>{ p.x += Math.sign(tx-p.x)*s; p.y += Math.sign(ty-p.y)*s*.8;
+      p.x=Math.max(10,Math.min(182,p.x)); p.y=Math.max(18,Math.min(98,p.y)); };
+    chase(p1, ball.x-8, ball.y, 1.2); chase(p2, ball.x+8, ball.y, 1.1);
+    if(Math.abs(p1.x-ball.x)<7 && Math.abs(p1.y-ball.y)<9) ball.vx = Math.abs(ball.vx);
+    if(Math.abs(p2.x-ball.x)<7 && Math.abs(p2.y-ball.y)<9) ball.vx = -Math.abs(ball.vx);
+    for(let i=0;i<8;i++){ g.fillStyle = i%2?'#0a2e18':'#082514'; g.fillRect(i*24,12,24,100); }
+    g.strokeStyle='rgba(0,255,136,.6)'; g.lineWidth=1;
+    g.strokeRect(6.5,14.5,179,95); g.beginPath(); g.moveTo(96,14); g.lineTo(96,110); g.stroke();
+    g.beginPath(); g.arc(96,62,16,0,7); g.stroke();
+    g.fillStyle='#eee'; g.fillRect(2,48,4,28); g.fillRect(186,48,4,28);
+    const dude=(p,shirt)=>{ g.fillStyle='#f2c39b'; g.fillRect(p.x-2|0,p.y-9|0,4,4);
+      g.fillStyle=shirt; g.fillRect(p.x-3|0,p.y-5|0,6,6);
+      g.fillStyle='#111'; g.fillRect(p.x-3|0,p.y+1|0,2,4); g.fillRect(p.x+1|0,p.y+1|0,2,4); };
+    dude(p1,'#ff0055'); dude(p2,'#00ff88');
+    g.fillStyle='#fff'; g.fillRect(ball.x-1|0, ball.y-1|0, 3,3);
+    g.fillStyle='#050810'; g.fillRect(0,0,192,12);
+    g.fillStyle='#00ff88'; g.font='9px monospace'; g.textAlign='left';
+    g.fillText(`RED ${sc[0]} : ${sc[1]} BLU`, 6, 9);
+    g.fillStyle='#ff00ff'; g.fillText('CYBER CUP', 132, 9);
+    t.needsUpdate = true;
+  }
+  update(0); return { t, update };
+}
+const screen = makeScreen();
+
+/* ═══════════════ 4. СВЕТ ═══════════════ */
+const hemi = new THREE.HemisphereLight('#2a3a66', '#1a1008', .35); scene.add(hemi);
+const amb  = new THREE.AmbientLight('#ffffff', .15); scene.add(amb);
+const sun  = new THREE.DirectionalLight('#aaccff', 1.2);
+sun.position.set(-7, 6.5, 3); sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-5; sun.shadow.camera.right=5; sun.shadow.camera.top=5; sun.shadow.camera.bottom=-5;
+sun.shadow.bias=-.0004; sun.shadow.normalBias=.02;
+sun.target.position.set(0,1,0); scene.add(sun.target, sun);
+
+const ceilLight = new THREE.PointLight('#00ff88', 2, 9, 2); ceilLight.position.set(.2, 2.0, .1); scene.add(ceilLight);
+const deskLight = new THREE.PointLight('#ff0055', 2, 3.2, 2); deskLight.position.set(-.18, 1.05, -2.0); scene.add(deskLight);
+const monLight  = new THREE.PointLight('#00ffff', 1.6, 2.4, 2); monLight.position.set(.2, 1.2, -1.85); scene.add(monLight);
+const led1 = new THREE.PointLight('#ff0055', 1.4, 3.5, 2); led1.position.set(-1.6, 2.45, -2.05); scene.add(led1);
+const led2 = new THREE.PointLight('#00ffff', 1.4, 3.5, 2); led2.position.set( 1.6, 2.45, -2.05); scene.add(led2);
+
+/* ═══════════════ 5. КОМНАТА: пол + 4 группы стен ═══════════════ */
+const W = 5.2, D = 4.6, H = 2.7, T = .12;
+
+const floorG = G();
+B(W+2*T, .16, D+2*T, M('#1a1510'), 0, -.08, 0, floorG);
+const floorMat = M('#ffffff', { map: woodTex(), roughness:.7 });
+const fl = P(W, D, floorMat, 0, .002, 0, floorG); fl.rotation.x = -Math.PI/2; fl.castShadow = false;
+
+const wallBack  = G(), wallFront = G(), wallLeft = G(), wallRight = G();
+// Тёмные стены для бункера
+const paintAccent = M('#ffffff', { map: wallTex('#1a1d24'), roughness:.95 });
+const paintPlain  = M('#ffffff', { map: wallTex('#111318'), roughness:.95 });
+const skirt = M('#1f2228', { roughness:.6 });
+
+B(W+2*T, H, T, paintAccent, 0, H/2, -D/2-T/2, wallBack);
+B(W, .09, .03, skirt, 0, .045, -D/2+.015, wallBack);
+B(W+2*T, H, T, paintPlain, 0, H/2, D/2+T/2, wallFront);
+B(W, .09, .03, skirt, 0, .045, D/2-.015, wallFront);
+B(T, H, D, paintPlain, W/2+T/2, H/2, 0, wallRight);
+B(.03, .09, D, skirt, W/2-.015, .045, 0, wallRight);
+
+const wx = -W/2-T/2, wy0 = 1.0, wy1 = 2.05, wz0 = -.2, wz1 = 1.2;
+B(T, wy0, D, paintPlain, wx, wy0/2, 0, wallLeft);
+B(T, H-wy1, D, paintPlain, wx, (H+wy1)/2, 0, wallLeft);
+B(T, wy1-wy0, wz0+D/2, paintPlain, wx, (wy0+wy1)/2, (-D/2+wz0)/2, wallLeft);
+B(T, wy1-wy0, D/2-wz1, paintPlain, wx, (wy0+wy1)/2, (D/2+wz1)/2, wallLeft);
+B(.03, .09, D, skirt, -W/2+.015, .045, 0, wallLeft);
+
+const skyDay = skyTex(false), skyNight = skyTex(true);
+const skyMat = new THREE.MeshBasicMaterial({ map: skyDay });
+const skyPlane = P(3.2, 2.4, skyMat, -W/2-.45, 1.5, .5, wallLeft); skyPlane.rotation.y = Math.PI/2;
+const frameMat = M('#2a2d35', { roughness:.5 });
+B(.12, .07, 1.52, frameMat, -W/2-.04, wy0-.02, .5, wallLeft);
+B(.12, .07, 1.52, frameMat, -W/2-.04, wy1+.02, .5, wallLeft);
+B(.12, 1.12, .07, frameMat, -W/2-.04, 1.525, wz0-.02, wallLeft);
+B(.12, 1.12, .07, frameMat, -W/2-.04, 1.525, wz1+.02, wallLeft);
+B(.10, 1.05, .04, frameMat, -W/2-.04, 1.525, .5, wallLeft);
+B(.10, .04, 1.4, frameMat, -W/2-.04, 1.525, .5, wallLeft);
+const glass = P(1.4, 1.05, new THREE.MeshPhysicalMaterial({ color:'#88ccff', transparent:true, opacity:.12, roughness:.08, metalness:.1, side:THREE.DoubleSide }), -W/2-.05, 1.525, .5, wallLeft);
+glass.rotation.y = Math.PI/2; glass.castShadow = false;
+B(.20, .05, 1.62, frameMat, -W/2+.07, wy0-.05, .5, wallLeft);
+const curtainMat = M('#1a1c24', { roughness:.95 });
+[-.32, 1.32].forEach(z => { const cu = B(.05, 1.28, .30, curtainMat, -W/2+.10, 1.5, z, wallLeft); cu.scale.x = 1.6; });
+const rod = C(.02,.02,1.8, M('#555',{metalness:.8,roughness:.35}), -W/2+.10, 2.16, .5, wallLeft); rod.rotation.x = Math.PI/2;
+B(.07, .46, 1.1, M('#22252b',{roughness:.5}), -W/2+.05, .42, .5, wallLeft);
+for(let i=0;i<11;i++) B(.09,.42,.02, M('#2a2d35'), -W/2+.06, .42, .05+i*.09, wallLeft);
+
+const doorMat = M('#1a1d24', { roughness:.55 });
+B(.06, 2.10, .07, frameMat, W/2-.03, 1.05, .72, wallRight);
+B(.06, 2.10, .07, frameMat, W/2-.03, 1.05, 1.68, wallRight);
+B(.06, .07, 1.03, frameMat, W/2-.03, 2.08, 1.2, wallRight);
+B(.05, 2.02, .90, doorMat, W/2-.05, 1.01, 1.2, wallRight);
+B(.02, .70, .60, M('#151820'), W/2-.08, 1.45, 1.2, wallRight);
+B(.02, .50, .60, M('#151820'), W/2-.08, .55, 1.2, wallRight);
+const knob = S(.035, M('#00ff88',{metalness:.9,roughness:.3}), W/2-.10, 1.0, 1.58, wallRight);
+C(.02,.02,.06, M('#00ff88',{metalness:.9,roughness:.3}), W/2-.08, 1.0, 1.58, wallRight).rotation.z = Math.PI/2;
+
+const poster = (t,w,h,x,y,z,ry,parent) => { const m = P(w,h, new THREE.MeshStandardMaterial({map:t, roughness:.9}), x,y,z, parent); m.rotation.y = ry; m.castShadow=false; return m; };
+poster(posterFootball(), .62, .86, -2.0, 1.80, -D/2+.02, 0, wallBack);
+poster(posterGG(),       .60, .60,  1.85, 1.85, -D/2+.02, 0, wallBack);
+poster(posterRetro(),    .60, .85,  W/2-.02, 1.60, .10, -Math.PI/2, wallRight);
+
+['#00ff88','#00ffff','#ff0055','#ff00ff'].forEach((c,i)=>{
+  const n = P(.10,.10, M(c,{roughness:.9, emissive:new THREE.Color(c), emissiveIntensity:.5}), -1.28+ (i%2)*.13, 1.52 - Math.floor(i/2)*.13, -D/2+.02, wallBack);
+  n.rotation.z = rnd(-.14,.14); n.castShadow=false;
+});
+
+const neonSign = P(0.9, 0.45, new THREE.MeshBasicMaterial({map: neonSignTex(), transparent: true, side: THREE.DoubleSide}), W/2-.02, 2.1, -1.0, wallRight);
+neonSign.rotation.y = -Math.PI/2; neonSign.castShadow = false;
+
+const clockG = G(wallBack, -1.02, 2.12, -D/2+.03);
+C(.145,.145,.04, M('#111',{roughness:.5}), 0,0,0, clockG).rotation.x = Math.PI/2;
+const face = put(new THREE.CircleGeometry(.125, 32), M('#0a0c10',{roughness:.6}), 0,0,.022, clockG);
+for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; B(.012,.02,.005, M('#00ff88'), Math.sin(a)*.10, Math.cos(a)*.10, .026, clockG).rotation.z=-a; }
+const hHand = B(.016,.07,.004, M('#00ff88'), 0,.035,.03, clockG);
+const mHand = B(.012,.10,.004, M('#00ff88'), 0,.05,.032, clockG);
+const sHand = B(.006,.11,.003, M('#ff0055'), 0,.055,.034, clockG);
+[hHand,mHand,sHand].forEach(h=>{ const p=G(clockG,0,0,h.position.z); h.position.z=0; p.add(h); h.userData.pivot=p; });
+const ledStrip = B(4.9,.045,.045, new THREE.MeshBasicMaterial({color:'#ff0055'}), 0, H-.11, -D/2+.07, wallBack);
+
+/* ═══════════════ 6. МЕБЕЛЬ ═══════════════ */
+const woodDark = M('#2a2218', { roughness:.7 });
+const woodLite = M('#3d3226', { roughness:.65 });
+const metal    = M('#4a5058', { metalness:.85, roughness:.35 });
+const plastic  = M('#15181e', { roughness:.55 });
+const white    = M('#e0e4ea', { roughness:.6 });
+
+const bed = G(scene, -2.05, 0, -1.25);
+B(1.00,.26,2.02, woodDark, 0,.20,0, bed);
+[[-.44,-.95],[.44,-.95],[-.44,.95],[.44,.95]].forEach(([x,z])=>B(.08,.14,.08, woodDark, x,.07,z, bed));
+B(1.02,.52,.07, woodDark, 0,.46,-1.02, bed);
+B(.96,.18,1.96, M('#1a1d24'), 0,.42,0, bed);
+B(.98,.10,1.30, M('#1a3a6a',{roughness:.95}), 0,.53,.32, bed);
+B(.98,.06,.22, M('#152d55',{roughness:.95}), 0,.57,-.30, bed);
+const pillow = B(.62,.14,.34, M('#2a2d35',{roughness:.95}), 0,.55,-.76, bed); pillow.rotation.x = -.08;
+B(.80,.22,.50, M('#151820',{roughness:.9}), .12,.11,.72, bed);
+const plush = G(bed, .22,.60,-.40);
+S(.10, M('#3a2a1a',{roughness:.95}), 0,0,0, plush);
+S(.075, M('#4a3520',{roughness:.95}), 0,.11,.02, plush);
+S(.03, M('#2a1a0a'), -.06,.17,.01, plush); S(.03, M('#2a1a0a'), .06,.17,.01, plush);
+S(.02, M('#00ff88'), 0,.10,.08, plush);
+
+const desk = G(scene, .35, 0, -1.95);
+B(1.70,.04,.66, woodLite, 0,.74,0, desk);
+[[-.80,-.28],[.80,-.28],[-.80,.28],[.80,.28]].forEach(([x,z])=>B(.05,.72,.05, metal, x,.36,z, desk));
+B(.44,.50,.56, woodDark, .52,.27,-.02, desk);
+for(let i=0;i<2;i++){ B(.40,.20,.02, M('#2a2520'), .52,.16+i*.24,.27, desk); C(.015,.015,.10, metal, .52,.16+i*.24,.29, desk).rotation.z=Math.PI/2; }
+
+B(.30,.02,.18, plastic, -.10,.77,-.16, desk);
+B(.06,.22,.06, plastic, -.10,.88,-.16, desk);
+const monitorFrame = B(.80,.47,.04, plastic, -.10,1.22,-.18, desk);
+monitorFrame.userData.isTarget = true; // Для клика
+const scr = P(.74,.41, new THREE.MeshBasicMaterial({map:screen.t}), -.10,1.22,-.157, desk); scr.castShadow=false;
+B(.80,.02,.02, new THREE.MeshBasicMaterial({color:'#00ffff'}), -.10,.985,-.16, desk);
+
+B(.44,.02,.15, plastic, -.10,.775,.16, desk);
+B(.42,.006,.13, new THREE.MeshBasicMaterial({color:'#ff0055'}), -.10,.787,.16, desk);
+B(.34,.004,.26, M('#0a0c10'), .32,.762,.16, desk);
+const mouse = S(.035, plastic, .32,.785,.16, desk); mouse.scale.set(1,.6,1.5);
+
+C(.07,.08,.02, plastic, -.70,.77,-.15, desk);
+const arm1 = C(.015,.015,.34, metal, -.70,.94,-.15, desk); arm1.rotation.z = .18;
+const arm2 = C(.015,.015,.28, metal, -.60,1.12,-.13, desk); arm2.rotation.z = 1.15;
+const shade = C(.02,.08,.11, M('#ff0055',{roughness:.5}), -.48,1.13,-.12, desk); shade.rotation.z = 2.3;
+put(new THREE.SphereGeometry(.025,10,10), new THREE.MeshBasicMaterial({color:'#ffaa88'}), -.46,1.09,-.12, desk);
+
+C(.045,.04,.10, M('#00ff88',{roughness:.5}), .60,.81,.20, desk);
+const handle = put(new THREE.TorusGeometry(.032,.009,8,16), M('#00ff88'), .655,.81,.20, desk); handle.rotation.y = Math.PI/2;
+C(.033,.033,.12, M('#ff0055',{metalness:.5,roughness:.4}), -.42,.82,.22, desk);
+B(.34,.03,.34, M('#2a2520',{roughness:.9}), .48,.775,-.14, desk);
+C(.05,.05,.02, plastic, .70,.77,-.20, desk); C(.012,.012,.30, plastic, .70,.92,-.20, desk);
+const hp = put(new THREE.TorusGeometry(.065,.02,10,20), M('#1f2229',{roughness:.5}), .70,1.02,-.20, desk); hp.rotation.y = Math.PI/2;
+S(.028, M('#0a0c10'), .70,1.02,-.265, desk); S(.028, M('#0a0c10'), .70,1.02,-.135, desk);
+
+const pcCase = B(.22,.46,.44, M('#0f1116',{roughness:.5}), .60,.24,-.05, desk);
+pcCase.userData.isTarget = true; // Для клика
+B(.005,.36,.03, new THREE.MeshBasicMaterial({color:'#ff0055'}), .492,.24,.14, desk);
+const fan = put(new THREE.CircleGeometry(.06,18), new THREE.MeshBasicMaterial({color:'#00ffff'}), .60,.34,.171, desk);
+
+B(1.40,.04,.22, woodLite, 0,1.62,-.23, desk);
+[-.60,.60].forEach(x=>B(.04,.14,.20, metal, x,1.55,-.23, desk));
+let bx = -.60;
+while(bx < .10){ const w = rnd(.035,.06), h = rnd(.20,.30);
+  B(w,h,.16, M(`hsl(${rnd(180,300)|0},70%,40%)`,{roughness:.85}), bx,1.64+h/2,-.23, desk); bx += w+.008; }
+
+const cup = G(desk, .40,1.64,-.23);
+B(.10,.03,.10, woodDark, 0,.015,0, cup);
+C(.015,.02,.07, M('#ffd700',{metalness:.9,roughness:.25}), 0,.065,0, cup);
+C(.055,.03,.09, M('#ffd700',{metalness:.9,roughness:.25}), 0,.145,0, cup);
+S(.03, M('#ffe860',{metalness:.9,roughness:.2}), 0,.20,0, cup);
+B(.09,.12,.02, M('#0f1525',{roughness:.7}), -.30,1.70,-.20, desk);
+
+const chair = G(scene, .30, 0, -1.15); chair.rotation.y = -.32;
+for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; const sp=G(chair,0,.07,0); sp.rotation.y=a;
+  B(.05,.03,.26, plastic, 0,0,.13, sp); S(.032, M('#0a0c10'), 0,-.03,.26, sp); }
+C(.04,.04,.30, metal, 0,.24,0, chair);
+B(.50,.10,.48, M('#151820',{roughness:.8}), 0,.44,0, chair);
+B(.48,.62,.09, M('#151820',{roughness:.8}), 0,.78,.22, chair).rotation.x = .12;
+B(.44,.10,.06, M('#ff0055',{roughness:.8}), 0,1.02,.25, chair);
+B(.30,.14,.08, M('#0a0c10'), 0,1.13,.24, chair);
+[-.27,.27].forEach(x=>{ B(.05,.20,.05, plastic, x,.55,.02, chair); B(.07,.04,.24, plastic, x,.66,.04, chair); });
+
+const shelf = G(scene, 2.44, 0, -1.15);
+[-.60,.60].forEach(z=>B(.30,1.80,.04, woodDark, 0,.90,z, shelf));
+[.02,.45,.90,1.35,1.79].forEach(y=>B(.30,.03,1.20, woodDark, 0,y,0, shelf));
+B(.02,1.80,1.20, M('#1a1510'), .14,.90,0, shelf);
+[.45,.90].forEach(y=>{ let z=-.55;
+  while(z<.48){ const w=rnd(.035,.065), h=rnd(.20,.34);
+    const bk = B(.20,h,w, M(`hsl(${rnd(180,300)|0},60%,35%)`,{roughness:.85}), -.02,y+.015+h/2,z, shelf);
+    if(Math.random()<.12) bk.rotation.x = .18;
+    z += w+.01; } });
+for(let i=0;i<4;i++) B(.22,.03,.16, M(`hsl(${rnd(180,300)|0},50%,40%)`), -.02,1.38+i*.032,-.35, shelf);
+const pad = G(shelf, -.02,1.40,.25);
+B(.14,.04,.09, M('#1a1d24'), 0,0,0, pad); S(.035,M('#1a1d24'), -.07,0,.02, pad); S(.035,M('#1a1d24'), .07,0,.02, pad);
+const fig = G(shelf, -.02,1.81,-.35);
+C(.05,.06,.02, M('#111'), 0,.01,0, fig); put(new THREE.CapsuleGeometry(.035,.08,4,10), M('#00ffff'), 0,.10,0, fig);
+S(.035, M('#ffd7a8'), 0,.19,0, fig);
+const pot2 = G(shelf, -.02,1.81,.35);
+C(.06,.045,.09, M('#8a4a2f'), 0,.045,0, pot2);
+for(let i=0;i<7;i++){ const l=S(.05, M('#2f8f4e'), rnd(-.05,.05),.12+rnd(0,.10),rnd(-.05,.05), pot2); l.scale.set(1,.5,1.5); }
+
+const rug = P(2.2, 1.5, M('#ffffff',{map:pitchRug(), roughness:.98}), 0, .006, .5); rug.rotation.x = -Math.PI/2; rug.castShadow=false;
+const bean = G(scene, 1.30, 0, .95);
+const bb = S(.45, M('#1a1d24',{roughness:.98}), 0,.30,0, bean); bb.scale.set(1,.72,1);
+const bb2 = S(.28, M('#222630',{roughness:.98}), 0,.46,.04, bean); bb2.scale.set(1,.5,1);
+// Геймерские наушники на пуфе
+const beanHp = G(bean, 0, 0.45, 0);
+const hpBand = put(new THREE.TorusGeometry(0.12, 0.02, 8, 16), M('#111'), 0, 0, 0, beanHp);
+hpBand.rotation.x = Math.PI / 2;
+const hpL = S(0.05, M('#ff0055'), -0.12, 0, 0, beanHp);
+const hpR = S(0.05, M('#ff0055'), 0.12, 0, 0, beanHp);
+
+const ball = G(scene, -.80, .11, 1.45); ball.rotation.set(.4,.7,.2);
+S(.11, M('#e0e4ea',{roughness:.45}), 0,0,0, ball, 28);
+{ const ico = new THREE.IcosahedronGeometry(1,0), pa = ico.attributes.position, seen = new Set();
+  for(let i=0;i<pa.count;i++){
+    const v = new THREE.Vector3().fromBufferAttribute(pa,i).normalize();
+    const k = v.toArray().map(n=>n.toFixed(2)).join();
+    if(seen.has(k)) continue; seen.add(k);
+    const patch = new THREE.Mesh(new THREE.CircleGeometry(.04,5), M('#0a0c10',{roughness:.5}));
+    patch.position.copy(v).multiplyScalar(.1085);
+    patch.lookAt(v.clone().multiplyScalar(2)); patch.rotateZ(Math.random()*3);
+    ball.add(patch);
+  } }
+
+const sk = G(scene, 2.42, 0, 2.0); sk.rotation.z = -.22;
+B(.21,.80,.025, M('#2a1a4a',{roughness:.6}), 0,.44,0, sk);
+B(.19,.24,.028, M('#15151a'), 0,.44,.002, sk);
+[-.26,.26].forEach(y=>{ C(.02,.02,.20, metal, 0,.44+y,.03, sk).rotation.z=Math.PI/2;
+  [-.09,.09].forEach(x=>{ const w=C(.032,.032,.03, M('#00ffff',{roughness:.5}), x,.44+y,.055, sk); w.rotation.x=Math.PI/2; }); });
+
+[[-1.45,-.05,.5],[-1.28,.14,.9]].forEach(([x,z,r])=>{ const s=G(scene,x,0,z); s.rotation.y=r;
+  B(.11,.05,.27, M('#1a1d24'), 0,.025,0, s); B(.10,.07,.20, M('#ff0055',{roughness:.8}), 0,.075,-.02, s);
+  B(.10,.06,.08, M('#e0e4ea'), 0,.09,.09, s); });
+
+const pack = G(scene, -1.25, 0, -.70); pack.rotation.y = .5;
+B(.32,.42,.20, M('#1a2540',{roughness:.9}), 0,.21,0, pack);
+B(.26,.16,.06, M('#121a30'), 0,.14,.12, pack);
+[-.09,.09].forEach(x=>B(.05,.30,.04, M('#0d1525'), x,.26,-.11, pack));
+B(.30,.05,.04, M('#00ff88'), 0,.36,.10, pack);
+
+const dumb = G(scene, .85, .09, 1.75); dumb.rotation.y = .5;
+C(.022,.022,.28, metal, 0,0,0, dumb).rotation.z = Math.PI/2;
+[-.15,.15].forEach(x=>{ C(.085,.085,.05, M('#111'), x,0,0, dumb).rotation.z=Math.PI/2; });
+
+const bin = G(scene, 1.58, 0, -2.02);
+C(.13,.10,.32, M('#2a2d35',{roughness:.6, side:THREE.DoubleSide}), 0,.16,0, bin);
+for(let i=0;i<4;i++) S(.04, M('#1a1d24',{roughness:.95}), rnd(-.2,.2),.04,rnd(-.15,.3), bin);
+
+const plant = G(scene, -2.22, 0, 1.85);
+C(.18,.13,.34, M('#8a4a2f',{roughness:.85}), 0,.17,0, plant);
+C(.17,.17,.03, M('#1a1510'), 0,.33,0, plant);
+for(let i=0;i<9;i++){ const a=i/9*Math.PI*2, h=rnd(.45,.95);
+  C(.012,.016,h, M('#2f8f4e'), Math.cos(a)*.05,.34+h/2,Math.sin(a)*.05, plant).rotation.z=Math.cos(a)*.18;
+  const lf = S(.13, M(i%2?'#1f6f3e':'#2f8f4e',{roughness:.9}), Math.cos(a)*.16,.34+h,Math.sin(a)*.16, plant);
+  lf.scale.set(1,.28,.6); lf.rotation.y = a; }
+
+const laundry = G(scene, -2.05, 0, 1.05);
+[['#ff0055',.20,0,0],['#00aaff',.17,.12,.10],['#e0e4ea',.15,-.10,.06]].forEach(([c,r,dx,dz])=>{
+  const s = S(r, M(c,{roughness:.98}), dx,r*.55,dz, laundry); s.scale.set(1,.55,1); });
+for(let i=0;i<3;i++) B(.22,.02,.16, M('#1a1d24',{roughness:.9}), -2.35,.02+i*.022,-.05).rotation.y = rnd(-.3,.3);
+
+/* — Потолочный вентилятор (новая фича) — */
+const ceilingFan = G(scene, 0.2, 0, 0.1);
+C(0.06, 0.06, 0.1, M('#222'), 0, H-0.05, 0, ceilingFan);
+const fanBlades = G(ceilingFan, 0, H-0.1, 0);
+for(let i=0; i<3; i++){
+    const blade = B(0.9, 0.02, 0.12, M('#333'), 0.45, 0, 0, fanBlades);
+    blade.rotation.y = (i / 3) * Math.PI * 2;
+}
+const fanRing = C(0.15, 0.15, 0.02, new THREE.MeshBasicMaterial({color: '#00ff88'}), 0, H-0.12, 0, ceilingFan);
+
+/* — люстра (дополнительная) — */
+const lamp = G(scene, -1.5, 0, 1.5);
+C(.012,.012,.45, M('#2b2f38'), 0,H-.225,0, lamp);
+const shade2 = C(.10,.30,.26, M('#1a1d24',{roughness:.7, side:THREE.DoubleSide}), 0,H-.58,0, lamp);
+put(new THREE.SphereGeometry(.06,12,12), new THREE.MeshBasicMaterial({color:'#ffaa88'}), 0,H-.66,0, lamp);
+
+/* ═══════════════ 7. РЕЖИМЫ СТЕН ═══════════════ */
+const walls = [];
+function registerWall(group, side, nx, nz){
+  const mats = [];
+  group.traverse(o=>{
+    if(!o.isMesh) return;
+    o.material = o.material.clone();
+    o.material.userData.base = o.material.opacity;
+    o.material.transparent = true;
+    o.castShadow = false;
+    mats.push(o.material);
+  });
+  walls.push({ group, side, normal:new THREE.Vector3(nx,0,nz), mats, o:1 });
+}
+registerWall(wallBack,'back',0,-1); registerWall(wallLeft,'left',-1,0);
+registerWall(wallFront,'front',0,1); registerWall(wallRight,'right',1,0);
+
+let mode = 'all';
+const camDir = new THREE.Vector3();
+function updateWalls(dt){
+  camera.getWorldDirection(camDir);
+  for(const w of walls){
+    let target;
+    if(mode === 'floor') target = 0;
+    else if(mode === 'back') target = (w.side==='back' || w.side==='left') ? 1 : 0;
+    else target = (w.normal.dot(camDir) < -.10) ? 0 : 1;
+    w.o += (target - w.o) * Math.min(1, dt*9);
+    const vis = w.o > .02;
+    w.group.visible = vis;
+    if(!vis) continue;
+    for(const m of w.mats){
+      const base = m.userData.base ?? 1;
+      m.opacity = base * w.o;
+      m.depthWrite = w.o > .92 && base > .9;
+    }
+  }
+}
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+}
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+
+/* ═══════════════ 8. ИНТЕРАКТИВ: КЛИК ПО КОМПЬЮТЕРУ ═══════════════ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let gameStartSprite = null;
+let gameStartTimeout = null;
+
+renderer.domElement.addEventListener('click', (event) => {
+    mouse.x = (event.clientX / innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    
+    for (let hit of intersects) {
+        if (hit.object.userData.isTarget) {
+            spawnGameStart();
+            break;
+        }
+    }
+});
+
+function spawnGameStart() {
+    if (gameStartSprite) {
+        scene.remove(gameStartSprite);
+        clearTimeout(gameStartTimeout);
+    }
+    const [c, g] = cv(512, 128);
+    g.clearRect(0,0,512,128);
+    g.font = 'bold 64px monospace';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#00ff88';
+    g.shadowColor = '#00ff88';
+    g.shadowBlur = 25;
+    g.fillText('GAME START', 256, 64);
+    
+    const texture = new THREE.CanvasTexture(c);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 1 });
+    gameStartSprite = new THREE.Sprite(mat);
+    gameStartSprite.position.set(-0.1, 1.95, -0.15); // Над монитором
+    scene.add(gameStartSprite);
+
+    // Анимация появления
+    let s = 0;
+    const grow = setInterval(() => {
+        s += 0.15;
+        gameStartSprite.scale.set(1.8 * s, 0.45 * s, 1);
+        if (s >= 1) clearInterval(grow);
+    }, 16);
+
+    gameStartTimeout = setTimeout(() => {
+        if (gameStartSprite) {
+            // Анимация исчезновения
+            let fade = 1;
+            const shrink = setInterval(() => {
+                fade -= 0.1;
+                gameStartSprite.material.opacity = fade;
+                gameStartSprite.scale.set(1.8 * fade, 0.45 * fade, 1);
+                if (fade <= 0) {
+                    clearInterval(shrink);
+                    scene.remove(gameStartSprite);
+                    gameStartSprite = null;
+                }
+            }, 16);
+        }
+    }, 2000);
+}
+
+/* ═══════════════ 9. ДЕНЬ / НОЧЬ, АВТОПОВОРОТ, СБРОС ═══════════════ */
+let night = true; // По умолчанию ночь для бункера
+function setNight(v){
+  night = v;
+  document.getElementById('btnNight').classList.toggle('active', v);
+  document.getElementById('btnNight').textContent = v ? '☀️ День' : '🌙 Ночь';
+  skyMat.map = v ? skyNight : skyDay; skyMat.needsUpdate = true;
+  sun.intensity = v ? .4 : 1.2; sun.color.set(v ? '#88aaff' : '#aaccff');
+  hemi.intensity = v ? .25 : .35; hemi.color.set(v ? '#1a2a4a' : '#2a3a66');
+  amb.intensity = v ? .12 : .15;
+  ceilLight.intensity = v ? 6 : 2;
+  deskLight.intensity = v ? 3 : 2;
+  monLight.intensity  = v ? 2.5 : 1.6;
+  led1.intensity = led2.intensity = v ? 2.5 : 1.4;
+  scene.background.set(v ? '#02040a' : '#0a0d14');
+}
+document.getElementById('btnNight').onclick = ()=>setNight(!night);
+document.getElementById('btnSpin').onclick = e=>{ controls.autoRotate = !controls.autoRotate; e.currentTarget.classList.toggle('active', controls.autoRotate); };
+document.getElementById('btnReset').onclick = ()=>{
+  camera.position.copy(HOME); camera.zoom = 1; camera.updateProjectionMatrix();
+  controls.target.set(0,1,0); controls.update();
+};
+addEventListener('keydown', e=>{
+  if(e.key==='1') setMode('all'); if(e.key==='2') setMode('back'); if(e.key==='3') setMode('floor');
+  if(e.key.toLowerCase()==='n') setNight(!night);
+  if(e.key.toLowerCase()==='r') document.getElementById('btnReset').click();
+});
+
+/* ═══════════════ 10. ЦИКЛ АНИМАЦИИ ═══════════════ */
+const clock = new THREE.Clock();
+function tick(){
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+
+  screen.update(t);
+  fan.rotation.z = t*4;
+  
+  // Плавная анимация потолочного вентилятора
+  fanBlades.rotation.y -= dt * 3.5;
+
+  const hue = (t*.06)%1;
+  ledStrip.material.color.setHSL(hue > .5 ? 0.95 : 0.0, .9, .6); // Мигание между розовым и красным
+  led1.color.setHSL(hue, .9, .55); led2.color.setHSL((hue+.35)%1, .9, .55);
+
+  const now = new Date();
+  const sec = now.getSeconds()+now.getMilliseconds()/1000;
+  const min = now.getMinutes()+sec/60, hr = (now.getHours()%12)+min/60;
+  sHand.userData.pivot.rotation.z = -sec/60*Math.PI*2;
+  mHand.userData.pivot.rotation.z = -min/60*Math.PI*2;
+  hHand.userData.pivot.rotation.z = -hr/12*Math.PI*2;
+
+  updateWalls(dt);
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+setNight(true); setMode('all'); tick();
+</script>
+</body>
+</html>
