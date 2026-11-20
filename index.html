@@ -1,906 +1,847 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Heist</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: #0f0f1e;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Courier New', monospace;
-            overflow: hidden;
-        }
-        
-        #gameContainer {
-            position: relative;
-            width: 400px;
-            height: 400px;
-        }
-        
-        canvas {
-            border: 3px solid #4ecca3;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-        
-        .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 15, 30, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #4ecca3;
-            z-index: 10;
-        }
-        
-        .screen.hidden {
-            display: none;
-        }
-        
-        h1 {
-            font-size: 32px;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 0px #e74c3c;
-            letter-spacing: 2px;
-        }
-        
-        .subtitle {
-            font-size: 14px;
-            margin-bottom: 40px;
-            color: #aaa;
-        }
-        
-        button {
-            background: #4ecca3;
-            color: #0f0f1e;
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            margin: 5px;
-        }
-        
-        button:hover {
-            background: #3db892;
-            transform: scale(1.05);
-        }
-        
-        button:active {
-            transform: scale(0.95);
-        }
-        
-        #hud {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #fff;
-            font-size: 14px;
-            z-index: 5;
-            pointer-events: none;
-        }
-        
-        .hud-item {
-            margin-bottom: 5px;
-            text-shadow: 1px 1px 2px #000;
-        }
-        
-        #sprintBar {
-            width: 100px;
-            height: 10px;
-            background: #333;
-            border: 1px solid #666;
-            display: inline-block;
-            vertical-align: middle;
-            margin-left: 5px;
-        }
-        
-        #sprintFill {
-            height: 100%;
-            background: #4ecca3;
-            transition: width 0.1s;
-        }
-        
-        .game-over-text {
-            color: #e74c3c;
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-        
-        .win-text {
-            color: #2ecc71;
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-        
-        .high-score {
-            color: #ffd700;
-            font-size: 16px;
-            margin-bottom: 30px;
-        }
-        
-        #adOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            z-index: 20;
-            font-size: 20px;
-        }
-        
-        #adOverlay.hidden {
-            display: none;
-        }
-        
-        #adTimer {
-            font-size: 48px;
-            color: #4ecca3;
-            margin-top: 20px;
-        }
-        
-        .bonus-notification {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(78, 204, 163, 0.9);
-            color: #0f0f1e;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            z-index: 15;
-            animation: fadeInOut 3s ease-in-out;
-        }
-        
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>🍭 Candy Kingdom Stealth</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: linear-gradient(180deg, #FFB6C1 0%, #FF69B4 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        font-family: 'Courier New', monospace;
+        overflow: hidden;
+    }
+    #gameContainer {
+        position: relative;
+        border: 4px solid #8B4513;
+        border-radius: 8px;
+        box-shadow: 0 0 30px rgba(139, 69, 19, 0.5);
+        background: #FFF;
+    }
+    canvas {
+        display: block;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+    }
+    #overlay {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #FFF;
+        text-align: center;
+        pointer-events: none;
+    }
+    #overlay.active { pointer-events: auto; }
+    #overlay h1 {
+        font-size: 42px;
+        margin-bottom: 20px;
+        text-shadow: 3px 3px 0 #FF69B4;
+    }
+    #overlay p {
+        font-size: 18px;
+        margin: 8px 0;
+        max-width: 500px;
+    }
+    #overlay button {
+        margin-top: 20px;
+        padding: 12px 30px;
+        font-size: 20px;
+        font-family: inherit;
+        background: #FF69B4;
+        color: #FFF;
+        border: 3px solid #FFF;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    #overlay button:hover { transform: scale(1.05); background: #FF1493; }
+    .hidden { display: none !important; }
+</style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="game" width="400" height="400"></canvas>
-        
-        <div id="startScreen" class="screen">
-            <h1>PIXEL HEIST</h1>
-            <div class="high-score">🏆 Лучший рекорд: <span id="bestScore">0</span></div>
-            <div class="subtitle">Собери алмазы и избегай охранников!</div>
-            <button onclick="startGame()">Играть</button>
-        </div>
-        
-        <div id="gameOverScreen" class="screen hidden">
-            <div class="game-over-text">ПОЙМАН!</div>
-            <div style="color: #fff; margin-bottom: 20px;">Счёт: <span id="finalScore">0</span></div>
-            <button onclick="restartGame()">Заново</button>
-            <button onclick="watchAdForBonus()" style="background: #9b59b6; margin-top: 10px;">📺 Посмотреть рекламу</button>
-        </div>
-        
-        <div id="winScreen" class="screen hidden">
-            <div class="win-text">УРОВЕНЬ ПРОЙДЕН!</div>
-            <div style="color: #fff; margin-bottom: 20px;">Время: <span id="finalTime">0</span>с</div>
-            <div style="color: #fff; margin-bottom: 20px;">Счёт: <span id="winScore">0</span></div>
-            <button onclick="restartGame()">Ещё раз</button>
-        </div>
-        
-        <div id="adOverlay" class="hidden">
-            <div>📺 Идет реклама спонсора...</div>
-            <div id="adTimer">5</div>
-        </div>
-        
-        <div id="hud" class="hidden">
-            <div class="hud-item">💎 <span id="diamondCount">0</span>/<span id="diamondTotal">0</span></div>
-            <div class="hud-item">⚡ <div id="sprintBar"><div id="sprintFill" style="width: 100%"></div></div></div>
-            <div class="hud-item" id="immunityHud" style="display: none;">🛡️ Бессмертие: <span id="immunityTimer">0</span>с</div>
-        </div>
+<div id="gameContainer">
+    <canvas id="game" width="800" height="600"></canvas>
+    <div id="overlay" class="active">
+        <h1>🍭 CANDY KINGDOM 🍭</h1>
+        <p>Ты — конфетный шпион!</p>
+        <p>Прокрадись мимо мармеладных охранников.</p>
+        <p>Прячься за леденцами 🍬 и собирай конфеты!</p>
+        <p style="margin-top:15px;"><b>Управление:</b> ← → или A/D — движение</p>
+        <p>ПРОБЕЛ или ↑ — прыжок</p>
+        <button id="startBtn">НАЧАТЬ ИГРУ</button>
     </div>
+</div>
 
-    <script>
-        const canvas = document.getElementById('game');
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        
-        // Game constants
-        const TILE_SIZE = 16;
-        const GRID_WIDTH = 25;
-        const GRID_HEIGHT = 25;
-        const PLAYER_SPEED = 3;
-        const SPRINT_SPEED = 5;
-        const GUARD_SPEED = 2;
-        const VISION_RANGE = 120;
-        const VISION_ANGLE = Math.PI / 2;
-        const SPRINT_DURATION = 3000; // ms
-        
-        // Level data
-        const level = {
-            grid: [
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-                [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
-                [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,0,1],
-                [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
-                [1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1],
-                [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
-                [1,1,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1],
-                [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
-                [1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,0,1],
-                [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1],
-                [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
-                [1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-            ],
-            playerSpawn: { x: 1, y: 1 },
-            exit: { x: 23, y: 17 },
-            diamonds: [
-                { x: 5, y: 3, collected: false },
-                { x: 12, y: 5, collected: false },
-                { x: 18, y: 9, collected: false },
-                { x: 8, y: 13, collected: false }
-            ],
-            guards: [
-                {
-                    waypoints: [{ x: 3, y: 5 }, { x: 10, y: 5 }],
-                    currentWaypoint: 0,
-                    x: 3 * TILE_SIZE + TILE_SIZE/2,
-                    y: 5 * TILE_SIZE + TILE_SIZE/2,
-                    direction: { x: 1, y: 0 },
-                    angle: 0,
-                    waitTimer: 0
-                },
-                {
-                    waypoints: [{ x: 15, y: 9 }, { x: 22, y: 9 }],
-                    currentWaypoint: 0,
-                    x: 15 * TILE_SIZE + TILE_SIZE/2,
-                    y: 9 * TILE_SIZE + TILE_SIZE/2,
-                    direction: { x: 1, y: 0 },
-                    angle: 0,
-                    waitTimer: 0
-                },
-                {
-                    waypoints: [{ x: 5, y: 15 }, { x: 15, y: 15 }],
-                    currentWaypoint: 0,
-                    x: 5 * TILE_SIZE + TILE_SIZE/2,
-                    y: 15 * TILE_SIZE + TILE_SIZE/2,
-                    direction: { x: 1, y: 0 },
-                    angle: 0,
-                    waitTimer: 0
-                }
-            ]
-        };
-        
-        // Game state
-        let gameState = 'menu'; // menu, playing, gameover, win, paused
-        let player = {
-            x: 0,
-            y: 0,
-            vx: 0,
-            vy: 0,
-            sprintEnergy: SPRINT_DURATION,
-            isSprinting: false,
-            lastSprintTime: 0,
-            immunity: 0, // Immunity timer in ms
-            score: 0
-        };
-        let keys = {};
-        let startTime = 0;
-        let animationId = null;
-        let adTimerInterval = null;
-        
-        // Audio context for sound effects
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        
-        function playSound(frequency, duration, type = 'sine') {
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            oscillator.frequency.value = frequency;
-            oscillator.type = type;
-            
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            
-            oscillator.start(audioCtx.currentTime);
-            oscillator.stop(audioCtx.currentTime + duration);
-        }
-        
-        // Load high score from localStorage
-        function getHighScore() {
-            return parseInt(localStorage.getItem('pixelHeistHighScore')) || 0;
-        }
-        
-        function saveHighScore(score) {
-            const currentHigh = getHighScore();
-            if (score > currentHigh) {
-                localStorage.setItem('pixelHeistHighScore', score);
+<script>
+// ============================================================
+// 🍭 CANDY KINGDOM STEALTH — Полный код игры
+// ============================================================
+
+// --- КОНСТАНТЫ ---
+const CANVAS_W = 800, CANVAS_H = 600;
+const GRAVITY = 0.6;
+const MAX_FALL = 12;
+const PLAYER_SPEED = 3;
+const JUMP_POWER = -11;
+const CHUNK_WIDTH = 800;
+const GROUND_Y = 500; // Y-координата пола
+
+// --- СОСТОЯНИЯ ИГРЫ ---
+const STATE = { MENU: 0, PLAYING: 1, DEAD: 2, WIN: 3, TUTORIAL: 4 };
+
+// --- CANVAS ---
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('startBtn');
+
+// --- ЦВЕТОВЫЕ ПАЛИТРЫ ---
+const PAL = {
+    // Игрок (конфетный шпион)
+    player: {
+        0: null, 1: '#000', 2: '#FFD1DC', 3: '#000', // контур, кожа, глаза
+        4: '#FF0000', 5: '#FF69B4', 6: '#C00', 7: '#8B4513' // щёки, рот, плащ, ботинки
+    },
+    // Враг (мармеладный мишка)
+    enemy: {
+        0: null, 1: '#000', 2: '#FF8C00', 3: '#FFA500',
+        4: '#000', 5: '#FFD700', 6: '#FF6347'
+    },
+    // Платформа (шоколад)
+    platform: { 0: null, 1: '#3E1F0F', 2: '#5C2E0E', 3: '#8B4513' },
+    // Укрытие (леденец)
+    hiding: { 0: null, 1: '#000', 2: '#FF1493', 3: '#FFF', 4: '#FF69B4' },
+    // Конфета
+    candy: { 0: null, 1: '#000', 2: '#FF69B4', 3: '#FFF', 4: '#FFD700' }
+};
+
+// --- ПИКСЕЛЬ-АРТ СПРАЙТЫ (16x16) ---
+const SPR = {
+    player: [
+        [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+        [0,0,0,0,1,2,2,2,2,2,2,1,0,0,0,0],
+        [0,0,0,1,2,2,2,2,2,2,2,2,1,0,0,0],
+        [0,0,0,1,2,3,2,2,2,3,2,2,1,0,0,0],
+        [0,0,0,1,2,2,4,2,4,2,2,2,1,0,0,0],
+        [0,0,0,1,2,2,2,5,2,2,2,2,1,0,0,0],
+        [0,0,0,0,1,2,2,2,2,2,1,0,0,0,0,0],
+        [0,0,0,1,6,6,6,6,6,6,6,1,0,0,0,0],
+        [0,0,1,6,6,6,6,6,6,6,6,6,1,0,0,0],
+        [0,0,1,6,6,6,6,6,6,6,6,6,1,0,0,0],
+        [0,0,1,6,6,6,6,6,6,6,6,6,1,0,0,0],
+        [0,0,0,1,6,6,6,6,6,6,6,1,0,0,0,0],
+        [0,0,0,0,1,6,6,6,6,6,1,0,0,0,0,0],
+        [0,0,0,0,1,7,7,0,7,7,1,0,0,0,0,0],
+        [0,0,0,0,1,7,7,0,7,7,1,0,0,0,0,0],
+        [0,0,0,1,1,1,1,0,1,1,1,1,0,0,0,0]
+    ],
+    enemy: [
+        [0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0],
+        [0,0,1,2,2,1,0,0,0,0,1,2,2,1,0,0],
+        [0,0,1,2,2,2,1,1,1,1,2,2,2,1,0,0],
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+        [0,1,2,2,4,2,2,2,2,4,2,2,2,2,1,0],
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+        [0,1,2,2,2,5,5,5,5,5,5,2,2,2,1,0],
+        [0,1,2,2,2,2,2,2,2,2,2,2,2,2,1,0],
+        [0,1,3,3,3,3,3,3,3,3,3,3,3,3,1,0],
+        [0,1,3,3,3,3,3,3,3,3,3,3,3,3,1,0],
+        [0,1,3,3,3,3,3,3,3,3,3,3,3,3,1,0],
+        [0,1,3,3,3,3,3,3,3,3,3,3,3,3,1,0],
+        [0,1,3,3,3,3,0,0,0,0,3,3,3,3,1,0],
+        [0,1,6,6,6,1,0,0,0,0,1,6,6,6,1,0],
+        [0,1,6,6,6,1,0,0,0,0,1,6,6,6,1,0],
+        [0,1,1,1,1,1,0,0,0,0,1,1,1,1,1,0]
+    ],
+    hiding: [
+        [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0],
+        [0,0,0,1,2,2,3,2,2,3,2,2,1,0,0,0],
+        [0,0,1,2,2,3,3,2,2,3,3,2,2,1,0,0],
+        [0,1,2,2,3,2,2,3,3,2,2,3,2,2,1,0],
+        [0,1,2,3,2,2,3,2,2,3,2,2,3,2,1,0],
+        [1,2,2,2,3,2,2,4,4,2,2,3,2,2,2,1],
+        [1,2,3,2,2,3,2,2,2,2,3,2,2,3,2,1],
+        [1,2,2,3,2,2,4,2,2,4,2,2,3,2,2,1],
+        [1,2,3,2,2,2,2,2,2,2,2,2,2,3,2,1],
+        [1,2,2,2,3,2,2,4,4,2,2,3,2,2,2,1],
+        [1,2,3,2,2,3,2,2,2,2,3,2,2,3,2,1],
+        [0,1,2,2,3,2,2,3,3,2,2,3,2,2,1,0],
+        [0,1,2,3,2,2,3,2,2,3,2,2,3,2,1,0],
+        [0,0,1,2,2,3,3,2,2,3,3,2,2,1,0,0],
+        [0,0,0,1,2,2,3,2,2,3,2,2,1,0,0,0],
+        [0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0]
+    ],
+    candy: [
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,1,2,2,2,2,1,0,0,0,0,0],
+        [0,0,0,0,1,2,3,3,3,3,2,1,0,0,0,0],
+        [0,0,0,1,2,3,4,4,4,4,3,2,1,0,0,0],
+        [0,0,1,2,3,4,4,4,4,4,4,3,2,1,0,0],
+        [0,1,2,3,4,4,4,4,4,4,4,4,3,2,1,0],
+        [1,2,3,4,4,4,4,4,4,4,4,4,4,3,2,1],
+        [1,2,3,4,4,4,4,4,4,4,4,4,4,3,2,1],
+        [1,2,3,4,4,4,4,4,4,4,4,4,4,3,2,1],
+        [1,2,3,4,4,4,4,4,4,4,4,4,4,3,2,1],
+        [0,1,2,3,4,4,4,4,4,4,4,4,3,2,1,0],
+        [0,0,1,2,3,4,4,4,4,4,4,3,2,1,0,0],
+        [0,0,0,1,2,3,4,4,4,4,3,2,1,0,0,0],
+        [0,0,0,0,1,2,3,3,3,3,2,1,0,0,0,0],
+        [0,0,0,0,0,1,2,2,2,2,1,0,0,0,0,0],
+        [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0]
+    ]
+};
+
+// --- КЭШ СПРАЙТОВ (рисуем 1 раз в offscreen, потом blit) ---
+const spriteCache = {};
+function buildSprite(key, matrix, palette) {
+    const c = document.createElement('canvas');
+    c.width = 16; c.height = 16;
+    const cx = c.getContext('2d');
+    for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+            const v = matrix[y][x];
+            const col = palette[v];
+            if (col) {
+                cx.fillStyle = col;
+                cx.fillRect(x, y, 1, 1);
             }
         }
-        
-        function updateHighScoreDisplay() {
-            document.getElementById('bestScore').textContent = getHighScore();
+    }
+    spriteCache[key] = c;
+}
+buildSprite('player', SPR.player, PAL.player);
+buildSprite('enemy', SPR.enemy, PAL.enemy);
+buildSprite('hiding', SPR.hiding, PAL.hiding);
+buildSprite('candy', SPR.candy, PAL.candy);
+
+// --- ВВОД ---
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// --- КЛАСС: ИГРОК ---
+class Player {
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.w = 24; this.h = 32;
+        this.vx = 0; this.vy = 0;
+        this.onGround = false;
+        this.facing = 1; // 1 вправо, -1 влево
+        this.hidden = false;
+        this.alive = true;
+    }
+    update(dt, platforms, hidingSpots) {
+        // Горизонтальное движение
+        let moving = false;
+        if (keys['ArrowLeft'] || keys['KeyA']) { this.vx = -PLAYER_SPEED; this.facing = -1; moving = true; }
+        else if (keys['ArrowRight'] || keys['KeyD']) { this.vx = PLAYER_SPEED; this.facing = 1; moving = true; }
+        else this.vx = 0;
+
+        // Прыжок
+        if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && this.onGround) {
+            this.vy = JUMP_POWER;
+            this.onGround = false;
         }
-        
-        function startGame() {
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('hud').classList.remove('hidden');
-            resetGame();
-            gameState = 'playing';
-            startTime = Date.now();
-            gameLoop();
+
+        // Гравитация
+        this.vy += GRAVITY * dt;
+        if (this.vy > MAX_FALL) this.vy = MAX_FALL;
+
+        // Движение по X с коллизией
+        this.x += this.vx * dt;
+        this.resolveCollisionsX(platforms);
+
+        // Движение по Y с коллизией
+        this.y += this.vy * dt;
+        this.onGround = false;
+        this.resolveCollisionsY(platforms);
+
+        // Проверка, прячется ли игрок
+        this.hidden = false;
+        for (const h of hidingSpots) {
+            if (this.overlaps(h)) { this.hidden = true; break; }
         }
-        
-        function restartGame() {
-            document.getElementById('gameOverScreen').classList.add('hidden');
-            document.getElementById('winScreen').classList.add('hidden');
-            resetGame();
-            gameState = 'playing';
-            startTime = Date.now();
+
+        // Падение в бездну
+        if (this.y > CANVAS_H + 200) this.alive = false;
+    }
+    resolveCollisionsX(platforms) {
+        for (const p of platforms) {
+            if (this.overlaps(p)) {
+                if (this.vx > 0) this.x = p.x - this.w;
+                else if (this.vx < 0) this.x = p.x + p.w;
+                this.vx = 0;
+            }
         }
-        
-        function resetGame() {
-            player.x = level.playerSpawn.x * TILE_SIZE + TILE_SIZE/2;
-            player.y = level.playerSpawn.y * TILE_SIZE + TILE_SIZE/2;
-            player.vx = 0;
-            player.vy = 0;
-            player.sprintEnergy = SPRINT_DURATION;
-            player.isSprinting = false;
-            player.immunity = 0;
-            player.score = 0;
-            
-            level.diamonds.forEach(d => d.collected = false);
-            
-            level.guards.forEach(guard => {
-                guard.currentWaypoint = 0;
-                guard.x = guard.waypoints[0].x * TILE_SIZE + TILE_SIZE/2;
-                guard.y = guard.waypoints[0].y * TILE_SIZE + TILE_SIZE/2;
-                guard.direction = { x: 1, y: 0 };
-                guard.angle = 0;
-                guard.waitTimer = 0;
-            });
-            
-            updateHUD();
+    }
+    resolveCollisionsY(platforms) {
+        for (const p of platforms) {
+            if (this.overlaps(p)) {
+                if (this.vy > 0) {
+                    this.y = p.y - this.h;
+                    this.vy = 0;
+                    this.onGround = true;
+                } else if (this.vy < 0) {
+                    this.y = p.y + p.h;
+                    this.vy = 0;
+                }
+            }
         }
-        
-        function updateHUD() {
-            const collected = level.diamonds.filter(d => d.collected).length;
-            document.getElementById('diamondCount').textContent = collected;
-            document.getElementById('diamondTotal').textContent = level.diamonds.length;
-            
-            const sprintPercent = (player.sprintEnergy / SPRINT_DURATION) * 100;
-            document.getElementById('sprintFill').style.width = sprintPercent + '%';
-            
-            // Update immunity display
-            const immunityHud = document.getElementById('immunityHud');
-            if (player.immunity > 0) {
-                immunityHud.style.display = 'block';
-                document.getElementById('immunityTimer').textContent = Math.ceil(player.immunity / 1000);
+    }
+    overlaps(o) {
+        return this.x < o.x + o.w && this.x + this.w > o.x &&
+               this.y < o.y + o.h && this.y + this.h > o.y;
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y;
+        ctx.save();
+        if (this.hidden) ctx.globalAlpha = 0.4;
+        if (this.facing === -1) {
+            ctx.translate(sx + this.w, sy);
+            ctx.scale(-1, 1);
+            ctx.drawImage(spriteCache.player, 0, 0, this.w, this.h);
+        } else {
+            ctx.drawImage(spriteCache.player, sx, sy, this.w, this.h);
+        }
+        ctx.restore();
+    }
+}
+
+// --- КЛАСС: ВРАГ ---
+class Enemy {
+    constructor(x, y, patrolRange, speed) {
+        this.x = x; this.y = y;
+        this.w = 28; this.h = 32;
+        this.startX = x;
+        this.patrolRange = patrolRange;
+        this.speed = speed || 1;
+        this.dir = 1;
+        this.visionDist = 140;
+        this.visionAngle = 50; // градусов в каждую сторону
+        this.alertTimer = 0;
+    }
+    update(dt, player, platforms, hidingSpots) {
+        // Патрулирование
+        this.x += this.dir * this.speed * dt;
+        if (this.x > this.startX + this.patrolRange) this.dir = -1;
+        if (this.x < this.startX - this.patrolRange) this.dir = 1;
+
+        // Проверка видимости игрока
+        if (player.alive && !player.hidden && this.canSee(player, platforms, hidingSpots)) {
+            this.alertTimer += dt;
+            if (this.alertTimer > 40) {
+                player.alive = false; // Обнаружен!
+            }
+        } else {
+            this.alertTimer = Math.max(0, this.alertTimer - dt * 0.5);
+        }
+    }
+    canSee(player, platforms, hidingSpots) {
+        const cx = this.x + this.w / 2;
+        const cy = this.y + this.h / 2;
+        const px = player.x + player.w / 2;
+        const py = player.y + player.h / 2;
+        const dx = px - cx;
+        const dy = py - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > this.visionDist) return false;
+
+        // Проверка направления (враг смотрит в сторону движения)
+        const angleToPlayer = Math.atan2(dy, dx * this.dir) * 180 / Math.PI;
+        if (Math.abs(angleToPlayer) > this.visionAngle) return false;
+
+        // Проверка препятствий (raycast)
+        const steps = Math.ceil(dist / 4);
+        for (let i = 1; i < steps; i++) {
+            const t = i / steps;
+            const rx = cx + dx * t;
+            const ry = cy + dy * t;
+            for (const p of platforms) {
+                if (rx > p.x && rx < p.x + p.w && ry > p.y && ry < p.y + p.h) return false;
+            }
+        }
+        return true;
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y;
+
+        // Конус зрения
+        ctx.save();
+        const cx = sx + this.w / 2;
+        const cy = sy + this.h / 2;
+        const baseAngle = this.dir === 1 ? 0 : Math.PI;
+        const a1 = baseAngle - (this.visionAngle * Math.PI / 180);
+        const a2 = baseAngle + (this.visionAngle * Math.PI / 180);
+
+        const alert = this.alertTimer / 40;
+        ctx.fillStyle = `rgba(255, ${Math.floor(100 - alert * 100)}, 0, ${0.2 + alert * 0.3})`;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, this.visionDist, a1, a2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Сам враг
+        ctx.save();
+        if (this.dir === -1) {
+            ctx.translate(sx + this.w, sy);
+            ctx.scale(-1, 1);
+            ctx.drawImage(spriteCache.enemy, 0, 0, this.w, this.h);
+        } else {
+            ctx.drawImage(spriteCache.enemy, sx, sy, this.w, this.h);
+        }
+        ctx.restore();
+
+        // Индикатор тревоги
+        if (this.alertTimer > 10) {
+            ctx.fillStyle = '#FF0000';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('!', sx + this.w / 2 - 4, sy - 5);
+        }
+    }
+}
+
+// --- КЛАСС: КОНФЕТА ---
+class Candy {
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.w = 20; this.h = 20;
+        this.collected = false;
+        this.bob = Math.random() * Math.PI * 2;
+    }
+    update(dt) {
+        this.bob += 0.05 * dt;
+    }
+    draw(ctx, cam) {
+        if (this.collected) return;
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y + Math.sin(this.bob) * 3;
+        ctx.drawImage(spriteCache.candy, sx, sy, this.w, this.h);
+    }
+}
+
+// --- КЛАСС: ПЛАТФОРМА ---
+class Platform {
+    constructor(x, y, w, h) {
+        this.x = x; this.y = y;
+        this.w = w; this.h = h;
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y;
+        // Шоколадная плитка с узором
+        ctx.fillStyle = '#5C2E0E';
+        ctx.fillRect(sx, sy, this.w, this.h);
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(sx, sy, this.w, 4);
+        ctx.fillStyle = '#3E1F0F';
+        ctx.fillRect(sx, sy + this.h - 4, this.w, 4);
+        // Квадратики шоколада
+        ctx.fillStyle = '#3E1F0F';
+        const tileW = 32;
+        for (let i = 0; i < this.w; i += tileW) {
+            ctx.fillRect(sx + i, sy, 2, this.h);
+        }
+    }
+}
+
+// --- КЛАСС: УКРЫТИЕ ---
+class HidingSpot {
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.w = 32; this.h = 32;
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y;
+        ctx.drawImage(spriteCache.hiding, sx, sy, this.w, this.h);
+    }
+}
+
+// --- КЛАСС: ФИНИШ ---
+class Finish {
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.w = 40; this.h = 80;
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y;
+        // Giant lollipop
+        ctx.fillStyle = '#FFF';
+        ctx.fillRect(sx + 16, sy + 30, 8, 50);
+        ctx.fillStyle = '#FF1493';
+        ctx.beginPath();
+        ctx.arc(sx + 20, sy + 20, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(sx + 20, sy + 20, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FF1493';
+        ctx.beginPath();
+        ctx.arc(sx + 20, sy + 20, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Флаг
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText('FINISH', sx - 5, sy - 5);
+    }
+}
+
+// --- ГЕНЕРАТОР УРОВНЕЙ ---
+class LevelGenerator {
+    constructor(level) {
+        this.level = level;
+        this.platforms = [];
+        this.enemies = [];
+        this.candies = [];
+        this.hidingSpots = [];
+        this.finish = null;
+        this.length = 0;
+        this.generate();
+    }
+    generate() {
+        // Длина уровня зависит от уровня
+        const totalLength = 2500 + this.level * 1000;
+
+        // Стартовая платформа (всегда ровная)
+        this.platforms.push(new Platform(0, GROUND_Y, 600, 100));
+
+        // Обучалка на уровне 1
+        if (this.level === 1) {
+            this.platforms.push(new Platform(700, GROUND_Y, 400, 100));
+            this.candies.push(new Candy(850, GROUND_Y - 40));
+            this.platforms.push(new Platform(1200, GROUND_Y, 400, 100));
+            this.candies.push(new Candy(1350, GROUND_Y - 40));
+            this.platforms.push(new Platform(1700, GROUND_Y, 800, 100));
+            this.length = 2500;
+            this.finish = new Finish(2400, GROUND_Y - 80);
+            return;
+        }
+
+        let curX = 600;
+        let chunkIndex = 0;
+        const chunkTypes = this.getChunkTypes();
+
+        while (curX < totalLength - 1000) {
+            const type = chunkTypes[Math.floor(Math.random() * chunkTypes.length)];
+            this.buildChunk(type, curX);
+            curX += 600 + Math.random() * 200;
+            chunkIndex++;
+        }
+
+        // Финишная платформа
+        this.platforms.push(new Platform(curX, GROUND_Y, 600, 100));
+        this.length = curX + 600;
+        this.finish = new Finish(curX + 500, GROUND_Y - 80);
+    }
+    getChunkTypes() {
+        // Чем выше уровень, тем больше типов
+        if (this.level === 2) return ['gap', 'enemy_simple'];
+        if (this.level === 3) return ['gap', 'enemy_simple', 'stairs', 'enemy_hide'];
+        if (this.level === 4) return ['gap', 'stairs', 'enemy_hide', 'enemy_double', 'pit'];
+        return ['gap', 'stairs', 'enemy_hide', 'enemy_double', 'pit', 'gauntlet'];
+    }
+    buildChunk(type, startX) {
+        switch (type) {
+            case 'gap':
+                this.platforms.push(new Platform(startX, GROUND_Y, 250, 100));
+                this.platforms.push(new Platform(startX + 400, GROUND_Y, 250, 100));
+                this.candies.push(new Candy(startX + 310, GROUND_Y - 50));
+                break;
+            case 'stairs':
+                this.platforms.push(new Platform(startX, GROUND_Y, 200, 100));
+                this.platforms.push(new Platform(startX + 250, GROUND_Y - 80, 150, 20));
+                this.platforms.push(new Platform(startX + 450, GROUND_Y - 160, 200, 20));
+                this.candies.push(new Candy(startX + 500, GROUND_Y - 200));
+                this.platforms.push(new Platform(startX + 700, GROUND_Y, 200, 100));
+                break;
+            case 'enemy_simple':
+                this.platforms.push(new Platform(startX, GROUND_Y, 700, 100));
+                this.enemies.push(new Enemy(startX + 200, GROUND_Y - 32, 150, 1));
+                this.candies.push(new Candy(startX + 600, GROUND_Y - 40));
+                break;
+            case 'enemy_hide':
+                this.platforms.push(new Platform(startX, GROUND_Y, 700, 100));
+                this.hidingSpots.push(new HidingSpot(startX + 150, GROUND_Y - 32));
+                this.enemies.push(new Enemy(startX + 400, GROUND_Y - 32, 180, 1.2));
+                this.candies.push(new Candy(startX + 600, GROUND_Y - 40));
+                break;
+            case 'enemy_double':
+                this.platforms.push(new Platform(startX, GROUND_Y, 800, 100));
+                this.hidingSpots.push(new HidingSpot(startX + 100, GROUND_Y - 32));
+                this.hidingSpots.push(new HidingSpot(startX + 500, GROUND_Y - 32));
+                this.enemies.push(new Enemy(startX + 250, GROUND_Y - 32, 120, 1.3));
+                this.enemies.push(new Enemy(startX + 600, GROUND_Y - 32, 100, 1.5));
+                this.candies.push(new Candy(startX + 350, GROUND_Y - 40));
+                break;
+            case 'pit':
+                this.platforms.push(new Platform(startX, GROUND_Y, 150, 100));
+                this.platforms.push(new Platform(startX + 250, GROUND_Y - 30, 100, 20));
+                this.platforms.push(new Platform(startX + 450, GROUND_Y - 60, 100, 20));
+                this.platforms.push(new Platform(startX + 650, GROUND_Y, 150, 100));
+                this.candies.push(new Candy(startX + 280, GROUND_Y - 70));
+                break;
+            case 'gauntlet':
+                this.platforms.push(new Platform(startX, GROUND_Y, 900, 100));
+                this.hidingSpots.push(new HidingSpot(startX + 100, GROUND_Y - 32));
+                this.hidingSpots.push(new HidingSpot(startX + 400, GROUND_Y - 32));
+                this.hidingSpots.push(new HidingSpot(startX + 700, GROUND_Y - 32));
+                this.enemies.push(new Enemy(startX + 250, GROUND_Y - 32, 100, 1.5));
+                this.enemies.push(new Enemy(startX + 550, GROUND_Y - 32, 100, 1.5));
+                this.candies.push(new Candy(startX + 820, GROUND_Y - 40));
+                break;
+        }
+    }
+}
+
+// --- КАМЕРА ---
+class Camera {
+    constructor() { this.x = 0; this.y = 0; }
+    follow(target, levelLength) {
+        const targetX = target.x - CANVAS_W / 2 + target.w / 2;
+        this.x += (targetX - this.x) * 0.1;
+        if (this.x < 0) this.x = 0;
+        if (this.x > levelLength - CANVAS_W) this.x = levelLength - CANVAS_W;
+        this.y = 0;
+    }
+}
+
+// --- ИГРОВОЙ МЕНЕДЖЕР ---
+const game = {
+    state: STATE.MENU,
+    level: 1,
+    score: 0,
+    lives: 3,
+    player: null,
+    levelGen: null,
+    camera: new Camera(),
+    particles: [],
+
+    startLevel(lvl) {
+        this.level = lvl;
+        this.levelGen = new LevelGenerator(lvl);
+        this.player = new Player(50, GROUND_Y - 50);
+        this.camera.x = 0;
+        this.state = STATE.PLAYING;
+    },
+
+    update(dt) {
+        if (this.state !== STATE.PLAYING) return;
+
+        this.player.update(dt, this.levelGen.platforms, this.levelGen.hidingSpots);
+        this.camera.follow(this.player, this.levelGen.length);
+
+        for (const e of this.levelGen.enemies) {
+            e.update(dt, this.player, this.levelGen.platforms, this.levelGen.hidingSpots);
+        }
+        for (const c of this.levelGen.candies) {
+            c.update(dt);
+            if (!c.collected && this.player.overlaps(c)) {
+                c.collected = true;
+                this.score += 10;
+                this.spawnParticles(c.x + 10, c.y + 10, '#FF69B4');
+            }
+        }
+
+        // Проверка финиша
+        if (this.levelGen.finish && this.player.overlaps(this.levelGen.finish)) {
+            if (this.level >= 5) {
+                this.state = STATE.WIN;
+                showOverlay('🏆 ПОБЕДА! 🏆', `Ты прошёл Конфетное Королевство!<br>Очки: ${this.score}`, 'ИГРАТЬ СНОВА');
             } else {
-                immunityHud.style.display = 'none';
+                this.level++;
+                this.startLevel(this.level);
+                showOverlay(`УРОВЕНЬ ${this.level}`, 'Продолжай красться!', 'В ПУТЬ!');
+                setTimeout(() => hideOverlay(), 1500);
             }
         }
-        
-        // Input handling
-        window.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-            if (e.key === 'Shift') player.isSprinting = true;
-        });
-        
-        window.addEventListener('keyup', (e) => {
-            keys[e.key.toLowerCase()] = false;
-            if (e.key === 'Shift') player.isSprinting = false;
-        });
-        
-        function isWall(x, y) {
-            const gridX = Math.floor(x / TILE_SIZE);
-            const gridY = Math.floor(y / TILE_SIZE);
-            
-            if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
-                return true;
+
+        // Смерть
+        if (!this.player.alive) {
+            this.lives--;
+            this.spawnParticles(this.player.x + 12, this.player.y + 16, '#FF0000');
+            if (this.lives <= 0) {
+                this.state = STATE.DEAD;
+                showOverlay('💀 GAME OVER 💀', `Очки: ${this.score}<br>Уровень: ${this.level}`, 'ПОПРОБОВАТЬ СНОВА');
+            } else {
+                // Респавн на начале уровня
+                this.player = new Player(50, GROUND_Y - 50);
+                this.camera.x = 0;
             }
-            
-            return level.grid[gridY][gridX] === 1;
         }
-        
-        function updatePlayer(deltaTime) {
-            let speed = PLAYER_SPEED;
-            
-            if (player.isSprinting && player.sprintEnergy > 0) {
-                speed = SPRINT_SPEED;
-                player.sprintEnergy -= deltaTime;
-                if (player.sprintEnergy < 0) player.sprintEnergy = 0;
-            } else if (!player.isSprinting && player.sprintEnergy < SPRINT_DURATION) {
-                player.sprintEnergy += deltaTime * 0.3;
-                if (player.sprintEnergy > SPRINT_DURATION) player.sprintEnergy = SPRINT_DURATION;
-            }
-            
-            // Update immunity
-            if (player.immunity > 0) {
-                player.immunity -= deltaTime;
-                if (player.immunity < 0) player.immunity = 0;
-            }
-            
-            player.vx = 0;
-            player.vy = 0;
-            
-            if (keys['w'] || keys['arrowup']) player.vy = -speed;
-            if (keys['s'] || keys['arrowdown']) player.vy = speed;
-            if (keys['a'] || keys['arrowleft']) player.vx = -speed;
-            if (keys['d'] || keys['arrowright']) player.vx = speed;
-            
-            // Normalize diagonal movement
-            if (player.vx !== 0 && player.vy !== 0) {
-                player.vx *= 0.707;
-                player.vy *= 0.707;
-            }
-            
-            // Try to move X
-            const newX = player.x + player.vx;
-            if (!checkCollision(newX, player.y)) {
-                player.x = newX;
-            }
-            
-            // Try to move Y
-            const newY = player.y + player.vy;
-            if (!checkCollision(player.x, newY)) {
-                player.y = newY;
-            }
-            
-            // Keep player in bounds
-            player.x = Math.max(4, Math.min(canvas.width - 4, player.x));
-            player.y = Math.max(4, Math.min(canvas.height - 4, player.y));
+
+        // Частицы
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += 0.3 * dt;
+            p.life -= dt;
+            if (p.life <= 0) this.particles.splice(i, 1);
         }
-        
-        function checkCollision(x, y) {
-            const halfSize = 4; // Half of 8px hitbox
-            
-            // Check all four corners of the hitbox
-            const points = [
-                { x: x - halfSize, y: y - halfSize },
-                { x: x + halfSize, y: y - halfSize },
-                { x: x - halfSize, y: y + halfSize },
-                { x: x + halfSize, y: y + halfSize }
-            ];
-            
-            for (let point of points) {
-                if (isWall(point.x, point.y)) {
-                    return true;
-                }
-            }
-            
-            return false;
-        }
-        
-        function updateGuards(deltaTime) {
-            level.guards.forEach(guard => {
-                if (guard.waitTimer > 0) {
-                    guard.waitTimer -= deltaTime;
-                    return;
-                }
-                
-                const target = guard.waypoints[guard.currentWaypoint];
-                const targetX = target.x * TILE_SIZE + TILE_SIZE/2;
-                const targetY = target.y * TILE_SIZE + TILE_SIZE/2;
-                
-                const dx = targetX - guard.x;
-                const dy = targetY - guard.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < 2) {
-                    // Reached waypoint
-                    guard.currentWaypoint = (guard.currentWaypoint + 1) % guard.waypoints.length;
-                    guard.waitTimer = 1000; // Wait 1 second
-                    
-                    // Update direction for next movement
-                    const nextTarget = guard.waypoints[guard.currentWaypoint];
-                    const nextDx = nextTarget.x * TILE_SIZE + TILE_SIZE/2 - guard.x;
-                    const nextDy = nextTarget.y * TILE_SIZE + TILE_SIZE/2 - guard.y;
-                    const nextDist = Math.sqrt(nextDx * nextDx + nextDy * nextDy);
-                    
-                    if (nextDist > 0) {
-                        guard.direction = { x: nextDx / nextDist, y: nextDy / nextDist };
-                        guard.angle = Math.atan2(nextDy, nextDx);
-                    }
-                } else {
-                    // Move towards waypoint
-                    const moveX = (dx / distance) * GUARD_SPEED;
-                    const moveY = (dy / distance) * GUARD_SPEED;
-                    
-                    guard.x += moveX;
-                    guard.y += moveY;
-                    
-                    guard.direction = { x: dx / distance, y: dy / distance };
-                    guard.angle = Math.atan2(dy, dx);
-                    
-                    // Add slight random look around
-                    if (Math.random() < 0.01) {
-                        guard.angle += (Math.random() - 0.5) * 0.3;
-                    }
-                }
+
+        // Очистка памяти (объекты далеко за камерой)
+        // (на самом деле в процедурной генерации всё фиксировано, но оставляем для будущих расширений)
+    },
+
+    spawnParticles(x, y, color) {
+        for (let i = 0; i < 12; i++) {
+            this.particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4 - 2,
+                life: 30,
+                color
             });
         }
-        
-        function checkVision() {
-            // If player has immunity, skip vision check
-            if (player.immunity > 0) return;
-            
-            for (let guard of level.guards) {
-                const dx = player.x - guard.x;
-                const dy = player.y - guard.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance > VISION_RANGE) continue;
-                
-                const angleToPlayer = Math.atan2(dy, dx);
-                let angleDiff = Math.abs(angleToPlayer - guard.angle);
-                
-                // Normalize angle difference
-                if (angleDiff > Math.PI) {
-                    angleDiff = 2 * Math.PI - angleDiff;
-                }
-                
-                if (angleDiff > VISION_ANGLE / 2) continue;
-                
-                // Check for walls between guard and player
-                if (!hasWallBetween(guard.x, guard.y, player.x, player.y)) {
-                    gameOver();
-                    return;
-                }
-            }
+    },
+
+    draw() {
+        // Фон — градиент
+        const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+        grad.addColorStop(0, '#FFB6C1');
+        grad.addColorStop(1, '#FF69B4');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+        // Облака (параллакс)
+        this.drawClouds();
+
+        if (this.state === STATE.MENU) return;
+
+        const cam = this.camera;
+
+        // Платформы
+        for (const p of this.levelGen.platforms) p.draw(ctx, cam);
+
+        // Укрытия
+        for (const h of this.levelGen.hidingSpots) h.draw(ctx, cam);
+
+        // Конфеты
+        for (const c of this.levelGen.candies) c.draw(ctx, cam);
+
+        // Финиш
+        if (this.levelGen.finish) this.levelGen.finish.draw(ctx, cam);
+
+        // Враги
+        for (const e of this.levelGen.enemies) e.draw(ctx, cam);
+
+        // Игрок
+        if (this.player) this.player.draw(ctx, cam);
+
+        // Частицы
+        for (const p of this.particles) {
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life / 30;
+            ctx.fillRect(p.x - cam.x, p.y - cam.y, 3, 3);
         }
-        
-        function hasWallBetween(x1, y1, x2, y2) {
-            const steps = Math.ceil(Math.sqrt((x2-x1)**2 + (y2-y1)**2) / 4);
-            
-            for (let i = 0; i <= steps; i++) {
-                const t = i / steps;
-                const checkX = x1 + (x2 - x1) * t;
-                const checkY = y1 + (y2 - y1) * t;
-                
-                if (isWall(checkX, checkY)) {
-                    return true;
-                }
-            }
-            
-            return false;
+        ctx.globalAlpha = 1;
+
+        // UI
+        this.drawUI();
+    },
+
+    drawClouds() {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        const offset = this.camera.x * 0.3;
+        for (let i = 0; i < 5; i++) {
+            const x = ((i * 300 - offset) % (CANVAS_W + 200)) - 100;
+            const y = 50 + (i % 2) * 40;
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI * 2);
+            ctx.arc(x + 25, y, 30, 0, Math.PI * 2);
+            ctx.arc(x + 55, y, 25, 0, Math.PI * 2);
+            ctx.fill();
         }
-        
-        function checkDiamonds() {
-            level.diamonds.forEach(diamond => {
-                if (diamond.collected) return;
-                
-                const diamondX = diamond.x * TILE_SIZE + TILE_SIZE/2;
-                const diamondY = diamond.y * TILE_SIZE + TILE_SIZE/2;
-                
-                const dx = player.x - diamondX;
-                const dy = player.y - diamondY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < 12) {
-                    diamond.collected = true;
-                    player.score += 100;
-                    playSound(800, 0.1);
-                    updateHUD();
-                }
-            });
+    },
+
+    drawUI() {
+        // Панель
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(10, 10, 200, 80);
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 10, 200, 80);
+
+        ctx.fillStyle = '#FFF';
+        ctx.font = 'bold 18px Courier New';
+        ctx.fillText(`🍬 ${this.score}`, 25, 35);
+        ctx.fillText(`❤️ ${this.lives}`, 25, 60);
+        ctx.fillText(`LVL ${this.level}`, 25, 85);
+
+        // Подсказка стелса
+        if (this.player && this.player.hidden) {
+            ctx.fillStyle = 'rgba(0, 200, 0, 0.8)';
+            ctx.fillRect(CANVAS_W - 180, 10, 170, 30);
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 14px Courier New';
+            ctx.fillText('🕵️ СПРЯТАН', CANVAS_W - 170, 30);
         }
-        
-        function checkExit() {
-            const allCollected = level.diamonds.every(d => d.collected);
-            if (!allCollected) return;
-            
-            const exitX = level.exit.x * TILE_SIZE + TILE_SIZE/2;
-            const exitY = level.exit.y * TILE_SIZE + TILE_SIZE/2;
-            
-            const dx = player.x - exitX;
-            const dy = player.y - exitY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < 12) {
-                winGame();
-            }
-        }
-        
-        function gameOver() {
-            gameState = 'gameover';
-            playSound(200, 0.3, 'sawtooth');
-            
-            // Save high score
-            saveHighScore(player.score);
-            
-            document.getElementById('finalScore').textContent = player.score;
-            document.getElementById('gameOverScreen').classList.remove('hidden');
-        }
-        
-        function winGame() {
-            gameState = 'win';
-            const time = ((Date.now() - startTime) / 1000).toFixed(1);
-            
-            // Calculate final score based on time bonus
-            const timeBonus = Math.max(0, 1000 - Math.floor(parseFloat(time) * 10));
-            player.score += timeBonus;
-            
-            // Save high score
-            saveHighScore(player.score);
-            
-            document.getElementById('finalTime').textContent = time;
-            document.getElementById('winScore').textContent = player.score;
-            playSound(600, 0.2);
-            setTimeout(() => playSound(800, 0.2), 200);
-            document.getElementById('winScreen').classList.remove('hidden');
-        }
-        
-        // Rewarded Ad System
-        function watchAdForBonus() {
-            // Pause the game
-            gameState = 'paused';
-            
-            // Show ad overlay
-            const adOverlay = document.getElementById('adOverlay');
-            adOverlay.classList.remove('hidden');
-            
-            let timeLeft = 5;
-            document.getElementById('adTimer').textContent = timeLeft;
-            
-            // Start countdown
-            adTimerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('adTimer').textContent = timeLeft;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(adTimerInterval);
-                    finishAd();
-                }
-            }, 1000);
-        }
-        
-        function finishAd() {
-            // Hide ad overlay
-            document.getElementById('adOverlay').classList.add('hidden');
-            
-            // Grant bonus: 5 seconds of immunity
-            player.immunity = 5000;
-            
-            // Show bonus notification
-            showBonusNotification('🛡️ +5 секунд бессмертия!');
-            
-            // Resume game
-            gameState = 'playing';
-            lastTime = performance.now();
-            gameLoop();
-        }
-        
-        function showBonusNotification(text) {
-            const notification = document.createElement('div');
-            notification.className = 'bonus-notification';
-            notification.textContent = text;
-            document.getElementById('gameContainer').appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-        
-        function drawPixelSprite(x, y, pixels, colors, size = 16) {
-            const pixelSize = size / pixels.length;
-            
-            for (let row = 0; row < pixels.length; row++) {
-                for (let col = 0; col < pixels[row].length; col++) {
-                    const colorKey = pixels[row][col];
-                    if (colorKey !== '.' && colors[colorKey]) {
-                        ctx.fillStyle = colors[colorKey];
-                        ctx.fillRect(
-                            x - size/2 + col * pixelSize,
-                            y - size/2 + row * pixelSize,
-                            pixelSize,
-                            pixelSize
-                        );
-                    }
-                }
-            }
-        }
-        
-        function render() {
-            // Clear canvas
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw grid/walls
-            for (let y = 0; y < level.grid.length; y++) {
-                for (let x = 0; x < level.grid[y].length; x++) {
-                    if (level.grid[y][x] === 1) {
-                        ctx.fillStyle = '#444444';
-                        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                        
-                        // Add some texture
-                        ctx.fillStyle = '#555555';
-                        ctx.fillRect(x * TILE_SIZE + 2, y * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                    }
-                }
-            }
-            
-            // Draw exit
-            const exitX = level.exit.x * TILE_SIZE;
-            const exitY = level.exit.y * TILE_SIZE;
-            const allCollected = level.diamonds.every(d => d.collected);
-            
-            ctx.fillStyle = allCollected ? '#2ecc71' : '#1a6b3a';
-            ctx.fillRect(exitX, exitY, TILE_SIZE, TILE_SIZE);
-            
-            // Exit door animation
-            if (allCollected) {
-                const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
-                ctx.fillStyle = `rgba(46, 204, 113, ${pulse})`;
-                ctx.fillRect(exitX + 2, exitY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-            }
-            
-            // Draw diamonds
-            const diamondPixels = [
-                ['.', '.', 'C', 'C', '.', '.'],
-                ['.', 'C', 'W', 'W', 'C', '.'],
-                ['C', 'W', 'C', 'C', 'W', 'C'],
-                ['C', 'C', 'W', 'W', 'C', 'C'],
-                ['.', 'C', 'C', 'C', 'C', '.'],
-                ['.', '.', 'C', 'C', '.', '.']
-            ];
-            
-            const diamondColors = {
-                'C': '#00d2ff',
-                'W': '#ffffff'
-            };
-            
-            level.diamonds.forEach(diamond => {
-                if (diamond.collected) return;
-                
-                const x = diamond.x * TILE_SIZE + TILE_SIZE/2;
-                const y = diamond.y * TILE_SIZE + TILE_SIZE/2;
-                
-                // Pulsing animation
-                const scale = 1 + Math.sin(Date.now() / 500) * 0.1;
-                
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.scale(scale, scale);
-                drawPixelSprite(0, 0, diamondPixels, diamondColors, 12);
-                ctx.restore();
-            });
-            
-            // Draw guard vision cones
-            level.guards.forEach(guard => {
-                ctx.save();
-                ctx.translate(guard.x, guard.y);
-                ctx.rotate(guard.angle);
-                
-                // Vision cone gradient
-                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, VISION_RANGE);
-                gradient.addColorStop(0, 'rgba(231, 76, 60, 0.4)');
-                gradient.addColorStop(1, 'rgba(231, 76, 60, 0.1)');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.arc(0, 0, VISION_RANGE, -VISION_ANGLE/2, VISION_ANGLE/2);
-                ctx.closePath();
-                ctx.fill();
-                
-                ctx.restore();
-            });
-            
-            // Draw guards
-            const guardPixels = [
-                ['.', '.', 'R', 'R', '.', '.'],
-                ['.', 'R', 'R', 'R', 'R', '.'],
-                ['R', 'R', 'B', 'B', 'R', 'R'],
-                ['R', 'R', 'R', 'R', 'R', 'R'],
-                ['.', 'R', 'R', 'R', 'R', '.'],
-                ['.', '.', 'R', 'R', '.', '.']
-            ];
-            
-            const guardColors = {
-                'R': '#e74c3c',
-                'B': '#000000'
-            };
-            
-            level.guards.forEach(guard => {
-                drawPixelSprite(guard.x, guard.y, guardPixels, guardColors);
-            });
-            
-            // Draw player
-            const playerPixels = [
-                ['.', '.', 'P', 'P', '.', '.'],
-                ['.', 'P', 'P', 'P', 'P', '.'],
-                ['.', 'P', 'E', 'E', 'P', '.'],
-                ['.', 'P', 'P', 'P', 'P', '.'],
-                ['.', '.', 'P', 'P', '.', '.'],
-                ['.', 'P', '.', '.', 'P', '.']
-            ];
-            
-            const playerColors = {
-                'P': player.immunity > 0 ? '#ffd700' : '#4ecca3', // Gold when immune
-                'E': '#ffffff'
-            };
-            
-            // Add immunity shield effect
-            if (player.immunity > 0) {
-                ctx.save();
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, 12, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
-            }
-            
-            drawPixelSprite(player.x, player.y, playerPixels, playerColors);
-        }
-        
-        let lastTime = 0;
-        
-        function gameLoop(timestamp) {
-            if (gameState !== 'playing') return;
-            
-            if (!lastTime) lastTime = timestamp;
-            const deltaTime = timestamp - lastTime;
-            lastTime = timestamp;
-            
-            updatePlayer(deltaTime);
-            updateGuards(deltaTime);
-            checkVision();
-            checkDiamonds();
-            checkExit();
-            updateHUD();
-            
-            render();
-            
-            animationId = requestAnimationFrame(gameLoop);
-        }
-        
-        // Initialize high score display
-        updateHighScoreDisplay();
-        
-        // Initial render
-        render();
-    </script>
+    }
+};
+
+// --- OVERLAY ---
+function showOverlay(title, text, btnText) {
+    overlay.classList.add('active');
+    overlay.innerHTML = `
+        <h1>${title}</h1>
+        <p>${text}</p>
+        <button id="startBtn">${btnText}</button>
+    `;
+    document.getElementById('startBtn').onclick = onOverlayClick;
+}
+function hideOverlay() {
+    overlay.classList.remove('active');
+}
+function onOverlayClick() {
+    if (game.state === STATE.MENU || game.state === STATE.DEAD) {
+        game.score = 0;
+        game.lives = 3;
+        game.startLevel(1);
+        hideOverlay();
+    } else if (game.state === STATE.WIN) {
+        game.score = 0;
+        game.lives = 3;
+        game.startLevel(1);
+        hideOverlay();
+    } else {
+        // Продолжить после перехода уровня
+        hideOverlay();
+    }
+}
+startBtn.onclick = onOverlayClick;
+
+// --- ГЛАВНЫЙ ЦИКЛ ---
+let lastTime = performance.now();
+function loop(now) {
+    const rawDt = (now - lastTime) / 16.67;
+    const dt = Math.min(rawDt, 3); // Защита от больших скачков
+    lastTime = now;
+
+    game.update(dt);
+    game.draw();
+
+    requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
-```
